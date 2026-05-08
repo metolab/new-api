@@ -3105,6 +3105,45 @@ export function ChannelMutateDrawer({
                         />
                       )}
 
+                      {currentType === 1 && (
+                        <FormField
+                          control={form.control}
+                          name='override_cache'
+                          render={({ field }) => (
+                            <FormItem className='flex items-center justify-between px-4 py-3'>
+                              <div className='space-y-0.5'>
+                                <FormLabel>{t('Override Cache')}</FormLabel>
+                                <FormDescription>
+                                  {t(
+                                    'Override cache mode for this channel'
+                                  )}
+                                </FormDescription>
+                              </div>
+                              <FormControl>
+                                <Select
+                                  value={field.value || ''}
+                                  onValueChange={field.onChange}
+                                >
+                                  <SelectTrigger className='w-40'>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectGroup>
+                                      <SelectItem value=''>
+                                        {t('None')}
+                                      </SelectItem>
+                                      <SelectItem value='dashscope'>
+                                        {t('DashScope')}
+                                      </SelectItem>
+                                    </SelectGroup>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      )}
+
                       <FormField
                         control={form.control}
                         name='thinking_to_content'

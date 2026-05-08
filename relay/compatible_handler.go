@@ -2,6 +2,7 @@ package relay
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -155,6 +156,15 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 			}
 		}
 
+		if info.RelayMode == relayconstant.RelayModeChatCompletions &&
+			info.ChannelType == constant.ChannelTypeOpenAI &&
+			info.ChannelSetting.OverrideCache == "dashscope" &&
+			info.TokenForceCacheEnabled {
+			if chatReq, ok := convertedRequest.(*dto.GeneralOpenAIRequest); ok {
+				injectDashscopeCacheControl(chatReq)
+			}
+		}
+
 		jsonData, err := common.Marshal(convertedRequest)
 		if err != nil {
 			return types.NewError(err, types.ErrorCodeJsonMarshalFailed, types.ErrOptionWithSkipRetry())
@@ -214,4 +224,50 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 		service.PostTextConsumeQuota(c, info, usage.(*dto.Usage), nil)
 	}
 	return nil
+}
+
+// injectDashscopeCacheControl adds DashScope explicit cache marks to the last content block
+// of the last message. It handles the three possible runtime types of Message.Content:
+//   - string: wraps in a MediaContent array with cache_control
+//   - []interface{}: mutates the last map entry in-place (preserves all original fields)
+//   - []dto.MediaContent: sets CacheControl on the last element
+//
+// If the last content block already carries a cache_control, no mark is added to avoid
+// duplicating marks beyond the DashScope limit of 4 per request.
+func injectDashscopeCacheControl(req *dto.GeneralOpenAIRequest) {
+	if len(req.Messages) == 0 {
+		return
+	}
+	lastMsg := &req.Messages[len(req.Messages)-1]
+
+	switch c := lastMsg.Content.(type) {
+	case string:
+		lastMsg.Content = []dto.MediaContent{{
+			Type:         dto.ContentTypeText,
+			Text:         c,
+			CacheControl: json.RawMessage(`{"type":"ephemeral"}`),
+		}}
+
+	case []interface{}:
+		if len(c) == 0 {
+			return
+		}
+		lastItem, ok := c[len(c)-1].(map[string]interface{})
+		if !ok {
+			return
+		}
+		if _, exists := lastItem["cache_control"]; exists {
+			return
+		}
+		lastItem["cache_control"] = map[string]string{"type": "ephemeral"}
+
+	case []dto.MediaContent:
+		if len(c) == 0 {
+			return
+		}
+		if len(c[len(c)-1].CacheControl) > 0 {
+			return
+		}
+		c[len(c)-1].CacheControl = json.RawMessage(`{"type":"ephemeral"}`)
+	}
 }

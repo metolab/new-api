@@ -16,6 +16,7 @@ export const apiKeyFormSchema = z.object({
   allow_ips: z.string().optional(),
   group: z.string().optional(),
   cross_group_retry: z.boolean().optional(),
+  force_cache_enabled: z.boolean().optional(),
   tokenCount: z.number().min(1).optional(),
 })
 
@@ -34,6 +35,7 @@ export const API_KEY_FORM_DEFAULT_VALUES: ApiKeyFormValues = {
   allow_ips: '',
   group: DEFAULT_GROUP,
   cross_group_retry: true,
+  force_cache_enabled: false,
   tokenCount: 1,
 }
 
@@ -71,6 +73,7 @@ export function transformFormDataToPayload(
     allow_ips: data.allow_ips || '',
     group: data.group || '',
     cross_group_retry: data.group === 'auto' ? !!data.cross_group_retry : false,
+    force_cache_enabled: !!data.force_cache_enabled,
   }
 }
 
@@ -94,6 +97,7 @@ export function transformApiKeyToFormDefaults(
     allow_ips: apiKey.allow_ips || '',
     group: apiKey.group || DEFAULT_GROUP,
     cross_group_retry: !!apiKey.cross_group_retry,
+    force_cache_enabled: !!apiKey.force_cache_enabled,
     tokenCount: 1,
   }
 }
