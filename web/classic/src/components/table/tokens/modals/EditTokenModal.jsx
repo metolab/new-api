@@ -81,6 +81,7 @@ const EditTokenModal = (props) => {
     allow_ips: '',
     group: '',
     cross_group_retry: false,
+    force_cache_enabled: false,
     tokenCount: 1,
   });
 
@@ -422,6 +423,16 @@ const EditTokenModal = (props) => {
                       size='default'
                       extraText={t(
                         '开启后，当前分组渠道失败时会按顺序尝试下一个分组的渠道',
+                      )}
+                    />
+                  </Col>
+                  <Col span={24}>
+                    <Form.Switch
+                      field='force_cache_enabled'
+                      label={t('强制开启缓存')}
+                      size='default'
+                      extraText={t(
+                        '若渠道支持，强制为每次请求开启缓存',
                       )}
                     />
                   </Col>
