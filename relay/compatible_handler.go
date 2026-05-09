@@ -271,3 +271,79 @@ func injectDashscopeCacheControl(req *dto.GeneralOpenAIRequest) {
 		c[len(c)-1].CacheControl = json.RawMessage(`{"type":"ephemeral"}`)
 	}
 }
+
+// injectDashscopeAnthropicCacheControl adds DashScope explicit cache marks to Anthropic-format
+// requests (dto.ClaudeRequest). It injects into:
+//  1. The last block of the system prompt (converting string system to array form if needed).
+//  2. The last content block of the last message.
+//
+// Each injection site handles three possible runtime types (string, []interface{}, []dto.ClaudeMediaMessage).
+// If a block already carries cache_control, it is left unchanged.
+func injectDashscopeAnthropicCacheControl(req *dto.ClaudeRequest) {
+	cacheControl := json.RawMessage(`{"type":"ephemeral"}`)
+
+	// --- 1. System ---
+	if req.System != nil {
+		switch s := req.System.(type) {
+		case string:
+			if s != "" {
+				text := s
+				req.System = []dto.ClaudeMediaMessage{{
+					Type:         "text",
+					Text:         &text,
+					CacheControl: cacheControl,
+				}}
+			}
+		case []interface{}:
+			if len(s) > 0 {
+				if lastItem, ok := s[len(s)-1].(map[string]interface{}); ok {
+					if _, exists := lastItem["cache_control"]; !exists {
+						lastItem["cache_control"] = map[string]string{"type": "ephemeral"}
+					}
+				}
+			}
+		case []dto.ClaudeMediaMessage:
+			if len(s) > 0 && len(s[len(s)-1].CacheControl) == 0 {
+				s[len(s)-1].CacheControl = cacheControl
+			}
+		}
+	}
+
+	// --- 2. Last message ---
+	if len(req.Messages) == 0 {
+		return
+	}
+	lastMsg := &req.Messages[len(req.Messages)-1]
+
+	switch c := lastMsg.Content.(type) {
+	case string:
+		if c != "" {
+			text := c
+			lastMsg.Content = []dto.ClaudeMediaMessage{{
+				Type:         "text",
+				Text:         &text,
+				CacheControl: cacheControl,
+			}}
+		}
+	case []interface{}:
+		if len(c) == 0 {
+			return
+		}
+		lastItem, ok := c[len(c)-1].(map[string]interface{})
+		if !ok {
+			return
+		}
+		if _, exists := lastItem["cache_control"]; exists {
+			return
+		}
+		lastItem["cache_control"] = map[string]string{"type": "ephemeral"}
+	case []dto.ClaudeMediaMessage:
+		if len(c) == 0 {
+			return
+		}
+		if len(c[len(c)-1].CacheControl) > 0 {
+			return
+		}
+		c[len(c)-1].CacheControl = cacheControl
+	}
+}
