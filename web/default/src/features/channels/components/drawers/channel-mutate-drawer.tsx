@@ -3105,7 +3105,7 @@ export function ChannelMutateDrawer({
                         />
                       )}
 
-                      {currentType === 1 && (
+                      {(currentType === 1 || currentType === 14) && (
                         <FormField
                           control={form.control}
                           name='override_cache'

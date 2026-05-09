@@ -2530,7 +2530,7 @@ const EditChannelModal = (props) => {
                     <Form.Switch field='force_format' label={t('强制格式化')} checkedText={t('开')} uncheckedText={t('关')} onChange={(value) => handleChannelSettingsChange('force_format', value)} extraText={t('强制将响应格式化为 OpenAI 标准格式（只适用于OpenAI渠道类型）')} />
                   )}
 
-                  {inputs.type === 1 && (
+                  {(inputs.type === 1 || inputs.type === 14) && (
                     <Form.Select
                       field='override_cache'
                       label={t('覆盖缓存')}
