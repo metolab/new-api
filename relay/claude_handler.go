@@ -158,15 +158,6 @@ func ClaudeHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *typ
 			return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
 		}
 		relaycommon.AppendRequestConversionFromRequest(info, convertedRequest)
-
-		if info.ChannelType == constant.ChannelTypeOpenAI &&
-			info.ChannelSetting.OverrideCache == "dashscope" &&
-			info.TokenForceCacheEnabled {
-			if chatReq, ok := convertedRequest.(*dto.GeneralOpenAIRequest); ok {
-				injectDashscopeCacheControl(chatReq)
-			}
-		}
-
 		jsonData, err := common.Marshal(convertedRequest)
 		if err != nil {
 			return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
